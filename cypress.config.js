@@ -12,4 +12,5 @@ export default defineConfig({
   video: true,
   screenshotOnRunFailure: true,
   watchForFileChanges: false,
+  defaultCommandTimeout: 5000
 });
