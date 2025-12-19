@@ -1,0 +1,107 @@
+/// <reference types="cypress" />
+
+beforeEach("Open test application", () => {
+  cy.visit("https://playground.bondaracademy.com/");
+});
+
+it("Input fields", () => {
+  cy.contains("Forms").click();
+  cy.contains("Form Layouts").click();
+
+  cy.get("#inputEmail1").type("hello@test.com", { delay: 200 }).clear().type("+Name+Name");
+
+  cy.get("#inputEmail1").clear().type("hello");
+
+  const name = "Siarhei";
+  cy.get("#inputEmail1").type("hello@test.com", { delay: 200 }).clear().type("hello").clear();
+  cy.contains("nb-card", "Using the Grid").contains("Email").type(`${name}@test.com`);
+
+  cy.get("#inputEmail1").should("not.have.value", "").clear().type("test@bondaracademy.com").press(Cypress.Keyboard.Keys.TAB);
+
+  cy.contains("Auth").click();
+  cy.contains("Login").click();
+
+  cy.get("#input-email").type("test@bondaracademy.com");
+  cy.get("#input-password").type("Welcome{enter}");
+});
+
+it("Radio buttons", () => {
+  cy.contains("Forms").click();
+  cy.contains("Form Layouts").click();
+
+  cy.contains("nb-card", "Using the Grid")
+    .find("[type='radio']")
+    .then((allRadioButtons) => {
+      cy.wrap(allRadioButtons).eq(0).check({ force: true }).should("be.checked");
+      cy.wrap(allRadioButtons).eq(1).check({ force: true });
+      cy.wrap(allRadioButtons).eq(0).should("not.be.checked");
+      cy.wrap(allRadioButtons).eq(2).should("be.disabled");
+    });
+
+  cy.contains("nb-card", "Using the Grid").contains("label", "Option 1").find("input").check({ force: true });
+});
+
+it("Checkboxes", () => {
+  cy.contains("Modal & Overlays").click();
+  cy.contains("Toastr").click();
+
+  cy.get("[type='checkbox']").check({ force: true });
+  cy.get("[type='checkbox']").should("be.checked");
+
+  cy.get("[type='checkbox']").uncheck({ force: true });
+  cy.get("[type='checkbox']").should("not.be.checked");
+});
+
+it("Lists and Dropdowns", () => {
+  cy.contains("Modal & Overlays").click();
+  cy.contains("Toastr").click();
+
+  // browser native dropdown
+  cy.contains("div", "Toast type:").find("select").select("info");
+  cy.contains("div", "Toast type:").find("select").should("have.value", "info");
+
+  // custom dropdown
+  cy.contains("div", "Position:").find("nb-select").click();
+  cy.get(".option-list").contains("bottom-right").click();
+  cy.contains("div", "Position:").find("nb-select").should("have.text", "bottom-right");
+
+  cy.contains("div", "Position:")
+    .find("nb-select")
+    .then((dropdown) => {
+      cy.wrap(dropdown).click();
+
+      cy.get(".option-list nb-option").each((option, index, list) => {
+        cy.wrap(option).click();
+        if (index < list.length - 1) {
+          cy.wrap(dropdown).click();
+        }
+        cy.wait(500);
+      });
+    });
+});
+
+it("Tooltips", () => {
+  cy.contains("Modal & Overlays").click();
+  cy.contains("Tooltip").click();
+
+  cy.contains("button", "Top").trigger("mouseenter");
+  cy.get("nb-tooltip").should("have.text", "This is a tooltip");
+});
+
+it("Dialog boxes", () => {
+  cy.contains("Tables & Data").click();
+  cy.contains("Smart Table").click();
+
+  // 1.
+  cy.get(".nb-trash").first().click();
+  cy.on("window:confirm", (confirm) => {
+    expect(confirm).to.equal("Are you sure you want to delete?");
+  });
+
+  // 2.
+  cy.window().then((win) => {
+    cy.stub(win, "confirm").as("dialogBox").returns(false);
+  });
+  cy.get(".nb-trash").first().click();
+  cy.get("@dialogBox").should("be.calledWith", "Are you sure you want to delete?");
+});
