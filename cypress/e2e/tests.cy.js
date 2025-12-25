@@ -250,3 +250,181 @@ describe("Dialog boxes", () => {
     cy.contains("button", "Confirm").click();
   });
 });
+
+describe("Web Tables", () => {
+  it("Filtered table by name", () => {
+    // Filter by name
+    cy.get("#filterInput").type("Charlie Adams");
+    cy.get("tbody").contains("tr", "Adams").should("contain", "Charlie Adams");
+    cy.get("tbody").contains("tr", "Adams").should("be.visible");
+    cy.get("tbody").contains("tr", "Alice Cooper").should("not.be.visible");
+  });
+
+  it("Filtered table by status - validate only Active rows", () => {
+    // Select Active status from dropdown
+    cy.get("#statusFilter").select("Active");
+
+    // Target only visible rows (without "hidden" class)
+    cy.get("#filterableTableBody tr:not(.hidden)").should("have.length", 3);
+
+    // Verify all visible rows have "Active" status
+    cy.get("#filterableTableBody tr:not(.hidden)").each((row) => {
+      cy.wrap(row).find("td").last().should("contain", "Active");
+    });
+
+    // Alternative: verify each row individually
+    cy.get("#filterableTableBody tr:not(.hidden)").eq(0).should("contain", "Alice Cooper").and("contain", "Active");
+    cy.get("#filterableTableBody tr:not(.hidden)").eq(1).should("contain", "Charlie Adams").and("contain", "Active");
+    cy.get("#filterableTableBody tr:not(.hidden)").eq(2).should("contain", "Eve Martinez").and("contain", "Active");
+
+    // Verify no visible rows contain Inactive or Pending status
+    cy.get("#filterableTableBody tr:not(.hidden)").should("not.contain", "Inactive");
+    cy.get("#filterableTableBody tr:not(.hidden)").should("not.contain", "Pending");
+  });
+
+  it("Filtered table by status - verify all statuses", () => {
+    // Get all status badges and verify they are all "Active"
+    cy.get("#statusFilter").select("Active");
+
+    cy.get("#filterableTableBody tr:not(.hidden) td:last-child").each((statusCell) => {
+      cy.wrap(statusCell).should("contain", "Active");
+    });
+
+    // Count Active badges
+    cy.get("#filterableTableBody tr:not(.hidden) td:last-child").filter(':contains("Active")').should("have.length", 3);
+  });
+
+  it("Filtered table - simple for...of loop", () => {
+    // Select Active status
+    cy.get("#statusFilter").select("Active");
+
+    // Get all visible rows (without "hidden" class) and use for...of loop
+    cy.get("#filterableTableBody tr:not(.hidden)").then((rows) => {
+      for (const row of rows) {
+        // Wrap each row and validate status
+        cy.wrap(row).find("td").last().should("contain", "Active");
+      }
+    });
+  });
+});
+
+describe("Date Picker", () => {
+  it("Select date and time", () => {
+    // type date
+    let selectedDate = "2025-12-05";
+    cy.get("#datePicker").type(selectedDate);
+    cy.get("#showDateBtn").click();
+    cy.get("#selectedDate").should("contain", selectedDate);
+
+    // type date and time
+    let selectedDateTime = "2025-12-26T18:18";
+    cy.get("#dateTimePicker").type(selectedDateTime);
+    cy.get("#showDateBtn").click();
+    cy.get("#selectedDate").should("contain", selectedDateTime);
+  });
+});
+
+describe("Range Sliders", () => {
+  it("Volume slider - set value using invoke", () => {
+    // Set slider value to 50
+    cy.get("#volumeSlider").invoke("val", 50).trigger("input");
+
+    // Verify the displayed value is updated
+    cy.get("#volumeValue").should("contain", "50");
+  });
+
+  it("Volume slider - set multiple values", () => {
+    const values = [0, 25, 50, 75, 100];
+
+    // 1 Test multiple values using forEach
+    values.forEach((value) => {
+      cy.get("#volumeSlider").invoke("val", value).trigger("input");
+      cy.get("#volumeValue").should("contain", value.toString());
+    });
+
+    // 2 Test multiple values using for...of loop
+    for (const value of values) {
+      cy.get("#volumeSlider").invoke("val", value).trigger("input");
+      cy.get("#volumeValue").should("contain", value.toString());
+    }
+  });
+
+  it("Volume slider - verify min and max boundaries", () => {
+    // Set to minimum
+    cy.get("#volumeSlider").invoke("val", 0).trigger("input");
+    cy.get("#volumeValue").should("contain", "0");
+
+    // Set to maximum
+    cy.get("#volumeSlider").invoke("val", 100).trigger("input");
+    cy.get("#volumeValue").should("contain", "100");
+
+    // Verify attributes
+    cy.get("#volumeSlider").should("have.attr", "min", "0");
+    cy.get("#volumeSlider").should("have.attr", "max", "100");
+    cy.get("#volumeSlider").should("have.attr", "step", "1");
+  });
+});
+
+describe("Drag & Drop", () => {
+  // METHOD 1: Using plugin @4tw/cypress-drag-drop
+  it("Simple Drag & Drop - using plugin", () => {
+    // Drag item2 from available to selected items
+    cy.get("#availableItems").find('[data-item="item2"]').drag("#selectedItems");
+
+    // Verify item2 is now in selected items
+    cy.get("#selectedItems").find('[data-item="item2"]').should("exist");
+    cy.get("#selectedItems").should("contain", "Элемент 2");
+  });
+
+  // METHOD 2: Manual implementation with dataTransfer
+  it("Simple Drag & Drop - manual with dataTransfer", () => {
+    // Create a DataTransfer object for drag event
+    const dataTransfer = new DataTransfer();
+
+    // Drag item3 from available to selected items
+    cy.get("#availableItems").find('[data-item="item3"]').trigger("dragstart", { dataTransfer });
+
+    cy.get("#selectedItems")
+      .trigger("dragenter", { dataTransfer })
+      .trigger("dragover", { dataTransfer })
+      .trigger("drop", { dataTransfer })
+      .trigger("dragend");
+
+    // Verify item3 is now in selected items
+    cy.get("#selectedItems").find('[data-item="item3"]').should("exist");
+    cy.get("#selectedItems").should("contain", "Элемент 3");
+  });
+
+  it("Drag tasks to in progress and done", () => {
+    // Drag task1 Создать дизайн
+    cy.get("#todoContainer").find('[data-task="task1"]').scrollIntoView().drag("#progressContainer");
+    cy.get("#progressContainer").find('[data-task="task1"]').should("exist");
+    cy.get("#progressContainer").should("contain", "Создать дизайн");
+
+    // Drag task2 Написать тесты
+    cy.get("#todoContainer").find('[data-task="task2"]').scrollIntoView().drag("#progressContainer");
+    cy.get("#progressContainer").find('[data-task="task2"]').should("exist");
+    cy.get("#progressContainer").should("contain", "Unit и E2E тесты");
+
+    // Drag task1, task2, task4 to Done
+    cy.get("#progressContainer").find('[data-task="task1"]').scrollIntoView().drag("#doneContainer");
+    cy.get("#progressContainer").find('[data-task="task2"]').scrollIntoView().drag("#doneContainer");
+    cy.get("#progressContainer").find('[data-task="task4"]').scrollIntoView().drag("#doneContainer");
+
+    cy.get("#doneContainer").find('[data-task="task1"]').should("exist");
+    cy.get("#doneContainer").find('[data-task="task2"]').should("exist");
+    cy.get("#doneContainer").find('[data-task="task4"]').should("exist");
+    cy.get("#doneContainer").should("contain", "Разработка API");
+    cy.get("#doneContainer").should("contain", "Создать дизайн");
+    cy.get("#doneContainer").should("contain", "Написать тесты");
+  });
+});
+
+describe("iFrames", () => {
+  it("Simple iFrame", () => {
+    cy.frameLoaded("#advanced #simpleFrame");
+    cy.iframe("#advanced #simpleFrame").find("#iframeButton").click();
+    cy.iframe("#advanced #simpleFrame").contains("Кнопка нажата!").should("exist");
+    cy.iframe("#advanced #simpleFrame").find("#iframeResult").should("include.text", "Кнопка нажата!");
+  });
+});
