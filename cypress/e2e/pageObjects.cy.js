@@ -1,8 +1,8 @@
 /// <reference types="cypress" />
 
-import { datePickerPage } from "../page-objests/datepickerPage";
-import { formLayoutsPage } from "../page-objests/formLayoutPage";
-import { navigateTo } from "../page-objests/navigationPage";
+import { datePickerPage } from "../page-objects/datepickerPage";
+import { formLayoutsPage } from "../page-objects/formLayoutPage";
+import { navigateTo } from "../page-objects/navigationPage";
 
 beforeEach("Open test application", () => {
   //   cy.visit("https://playground.bondaracademy.com/");
